@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas CarolOke</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="min-vh-100">
+        <!-- Header -->
+        <header class="header-section">
+            <div class="container py-5 text-center">
+                <h1 class="display-3 fw-bold text-white mb-3">🎄 Christmas CarolOke 🎤</h1>
+                <p class="lead text-white-50">Sing your heart out with your favorite Christmas carols!</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="py-5">
+            <div class="container">
+                <!-- Controls Section -->
+                <div class="row mb-5">
+                    <div class="col-lg-8 mx-auto">
+                        <div class="controls-card">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <button @click="playRandomSong" class="btn btn-primary btn-lg w-100">
+                                        <i class="bi bi-shuffle"></i> Random Song
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <button @click="showAddForm = !showAddForm" class="btn btn-success btn-lg w-100">
+                                        <i class="bi bi-plus-circle"></i> Add Your Song
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Song Form -->
+                <div v-if="showAddForm" class="row mb-5">
+                    <div class="col-lg-8 mx-auto">
+                        <div class="form-card">
+                            <h3 class="mb-4">Add Your Own Carol</h3>
+                            <form @submit.prevent="addSong">
+                                <div class="mb-3">
+                                    <label for="songTitle" class="form-label">Song Title</label>
+                                    <input v-model="newSong.title" type="text" class="form-control" id="songTitle" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="songArtist" class="form-label">Artist</label>
+                                    <input v-model="newSong.artist" type="text" class="form-control" id="songArtist" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="songLyrics" class="form-label">Lyrics</label>
+                                    <textarea v-model="newSong.lyrics" class="form-control" id="songLyrics" rows="6" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="songAudio" class="form-label">Audio URL (YouTube or MP3 link)</label>
+                                    <input v-model="newSong.audioUrl" type="url" class="form-control" id="songAudio" required>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col">
+                                        <button type="submit" class="btn btn-success w-100">Save Song</button>
+                                    </div>
+                                    <div class="col">
+                                        <button type="button" @click="showAddForm = false" class="btn btn-secondary w-100">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Currently Playing -->
+                <div v-if="currentSong" class="row mb-5">
+                    <div class="col-lg-10 mx-auto">
+                        <div class="now-playing-card">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-2">{{ currentSong.title }}</h4>
+                                    <p class="text-muted">by {{ currentSong.artist }}</p>
+                                    <div class="mt-3">
+                                        <button @click="stopSong" class="btn btn-danger">Stop</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="audio-player">
+                                        <audio ref="audioPlayer" @ended="songEnded" @timeupdate="updateHighlight" style="width: 100%;" controls>
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lyrics Display -->
+                <div v-if="currentSong" class="row mb-5">
+                    <div class="col-lg-10 mx-auto">
+                        <div class="lyrics-card">
+                            <h5 class="mb-4">Lyrics</h5>
+                            <div class="lyrics-text">
+                                <div v-for="(line, index) in currentSong.lyrics.split('\n')" :key="index" :class="{ 'highlighted-line': index === highlightedLineIndex }" class="lyrics-line">
+                                    {{ line }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timing Editor -->
+                <div v-if="showTimingEditor" class="row mb-5">
+                    <div class="col-lg-10 mx-auto">
+                        <div class="form-card">
+                            <h3 class="mb-4">Edit Lyric Timings</h3>
+                            <p class="text-muted mb-3">Set the time (in seconds) when each lyric line should be highlighted. Use "Capture Time" to grab the current playback time.</p>
+                            
+                            <div class="mb-4">
+                                <div class="audio-player">
+                                    <audio ref="audioPlayer" @ended="songEnded" @timeupdate="updateHighlight" style="width: 100%;" controls>
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                </div>
+                                <button @click="captureCurrentTime" class="btn btn-info mt-2 w-100">📍 Capture Current Time</button>
+                            </div>
+
+                            <div class="timing-list mb-4">
+                                <h6 class="mb-3">Timing Entries</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Line #</th>
+                                                <th>Lyric Line</th>
+                                                <th>Time (seconds)</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(timing, idx) in songs.find(s => s.id === editingSongId)?.timings || []" :key="idx">
+                                                <td>{{ idx + 1 }}</td>
+                                                <td class="text-truncate" style="max-width: 200px;">{{ songs.find(s => s.id === editingSongId)?.lyrics.split('\n')[idx] }}</td>
+                                                <td>
+                                                    <input type="number" step="0.1" :value="timing" @input="updateTiming(editingSongId, idx, $event.target.value)" class="form-control form-control-sm" />
+                                                </td>
+                                                <td>
+                                                    <button @click="removeTimingEntry(editingSongId, idx)" class="btn btn-sm btn-danger">×</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col">
+                                    <button @click="closeTimingEditor" class="btn btn-success w-100">Save Timings</button>
+                                </div>
+                                <div class="col">
+                                    <button @click="showTimingEditor = false; editingSongId = null" class="btn btn-secondary w-100">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Songs List -->
+                <div class="row">
+                    <div class="col-lg-10 mx-auto">
+                        <h3 class="mb-4">📋 All Songs</h3>
+                        <div class="row g-4">
+                            <div v-for="song in songs" :key="song.id" class="col-md-6 col-lg-4">
+                                <div class="song-card" :class="{ active: currentSong && currentSong.id === song.id }">
+                                    <h5 class="card-title">{{ song.title }}</h5>
+                                    <p class="card-text text-muted">{{ song.artist }}</p>
+                                    <button @click="playSong(song)" class="btn btn-sm btn-primary w-100 mb-2">
+                                        <i class="bi bi-play-fill"></i> Play
+                                    </button>
+                                    <button @click="openTimingEditor(song)" class="btn btn-sm btn-info w-100 mb-2">
+                                        ⏱️ Edit Timings
+                                    </button>
+                                    <button v-if="!isDefaultSong(song.id)" @click="removeSong(song.id)" class="btn btn-sm btn-danger w-100">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer-section mt-5">
+            <div class="container text-center py-4">
+                <p class="text-white-50 mb-0">Made with ❤️ for the holiday season • Christmas CarolOke 2025</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
