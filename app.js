@@ -6,8 +6,6 @@ createApp({
             songs: [],
             currentSong: null,
             showAddForm: false,
-            showTimingEditor: false,
-            editingSongId: null,
             newSong: {
                 title: '',
                 artist: '',
@@ -141,43 +139,6 @@ createApp({
         isDefaultSong(id) {
             // Default songs have IDs 1-6
             return id <= 6;
-        },
-        openTimingEditor(song) {
-            this.editingSongId = song.id;
-            this.showTimingEditor = true;
-            // Ensure timings array exists
-            if (!song.timings) {
-                song.timings = [];
-            }
-        },
-        closeTimingEditor() {
-            this.showTimingEditor = false;
-            this.editingSongId = null;
-            this.saveToLocalStorage();
-        },
-        captureCurrentTime() {
-            const song = this.songs.find(s => s.id === this.editingSongId);
-            const audio = this.$refs.audioPlayer;
-            if (song && audio) {
-                if (!song.timings) {
-                    song.timings = [];
-                }
-                song.timings.push(Math.round(audio.currentTime * 100) / 100);
-                song.timings.sort((a, b) => a - b);
-            }
-        },
-        removeTimingEntry(songId, index) {
-            const song = this.songs.find(s => s.id === songId);
-            if (song && song.timings) {
-                song.timings.splice(index, 1);
-            }
-        },
-        updateTiming(songId, index, value) {
-            const song = this.songs.find(s => s.id === songId);
-            if (song && song.timings) {
-                song.timings[index] = parseFloat(value) || 0;
-                song.timings.sort((a, b) => a - b);
-            }
         },
         saveToLocalStorage() {
             // Save custom songs (ID > 6) to localStorage
